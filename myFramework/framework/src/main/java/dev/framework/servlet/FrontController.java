@@ -1,4 +1,4 @@
-package dev.framework.core;
+package dev.framework.servlet;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;

@@ -7,7 +7,7 @@
 
     <servlet>
         <servlet-name>MyFramework</servlet-name>
-        <servlet-class>dev.framework.core.FrontController</servlet-class>
+        <servlet-class>dev.framework.servlet.FrontController</servlet-class>
     </servlet>
 
     <servlet-mapping>
