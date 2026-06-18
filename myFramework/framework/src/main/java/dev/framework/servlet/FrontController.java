@@ -66,9 +66,26 @@
         }
 
         public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
-            String url = request.getRequestURL().toString();
-            System.out.println("[Framework] URL: " + url);
-            response.getWriter().println("URL recue: " + url);
+        String uri = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        String path = uri.substring(contextPath.length()); // enlève "/MyFramework"
+
+        Method method = routes.get(path);
+
+        if (method == null) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            response.getWriter().println("404 - Aucune route pour : " + path);
+            return;
         }
+
+        try {
+            Object instance = instances.get(path);
+            Object result = method.invoke(instance);
+            response.getWriter().println(result);
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().println("Erreur : " + e.getMessage());
+        }
+}
 
     }
