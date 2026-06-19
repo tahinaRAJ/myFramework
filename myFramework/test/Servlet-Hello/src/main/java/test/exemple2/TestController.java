@@ -1,11 +1,11 @@
-package com.example;
+package test.example2;
 
 import dev.framework.annotation.Controller;
 
-@Controller("/hello")
-public class HelloController {
+@Controller("/hello2")
+public class TestController {
 
-    @Controller("/world")
+    @Controller("/world2")
     public String world() {
         return "Hello world !";
     }
