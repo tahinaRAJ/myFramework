@@ -7,12 +7,23 @@
 
     <servlet>
         <servlet-name>MyFramework</servlet-name>
-        <servlet-class>dev.framework.core.FrontController</servlet-class>
+        <servlet-class>dev.framework.servlet.FrontController</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>MyFramework</servlet-name>
+        <servlet-class>dev.framework.servlet.FrontController</servlet-class>
+        <init-param>
+            <param-name>basePackage</param-name>
+            <param-value>com.example</param-value>
+        </init-param>
     </servlet>
 
     <servlet-mapping>
         <servlet-name>MyFramework</servlet-name>
         <url-pattern>/</url-pattern>
     </servlet-mapping>
+    
+    
 
 </web-app>
