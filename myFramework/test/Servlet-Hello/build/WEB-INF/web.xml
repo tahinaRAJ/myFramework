@@ -10,14 +10,14 @@
         <servlet-class>dev.framework.servlet.FrontController</servlet-class>
     </servlet>
 
-    <servlet>
+    <!-- <servlet>
         <servlet-name>MyFramework</servlet-name>
         <servlet-class>dev.framework.servlet.FrontController</servlet-class>
         <init-param>
             <param-name>basePackage</param-name>
             <param-value>com.example</param-value>
         </init-param>
-    </servlet>
+    </servlet> -->
 
     <servlet-mapping>
         <servlet-name>MyFramework</servlet-name>
