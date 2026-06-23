@@ -11,4 +11,9 @@ public class Test
     public String world() {
         return "Hello world !";
     }
+
+    @UrlMapping("/worldtest")
+    public String worldtest() {
+        return "Hello world !";
+    }
 }
