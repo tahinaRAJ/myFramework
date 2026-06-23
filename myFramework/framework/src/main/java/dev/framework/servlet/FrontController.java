@@ -1,6 +1,7 @@
 package dev.framework.servlet;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -9,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import dev.framework.annotation.Controller;
+import dev.framework.annotation.UrlMapping;
 import dev.framework.util.LoadClass;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -41,8 +43,8 @@ public class FrontController extends HttpServlet {
                 Object instance = clazz.getDeclaredConstructor().newInstance();
 
                 for (Method method : clazz.getDeclaredMethods()) {
-                    if (method.isAnnotationPresent(Controller.class)) {
-                        Controller methodAnnotation = method.getDeclaredAnnotation(Controller.class);
+                    if (method.isAnnotationPresent(UrlMapping.class)) {
+                        UrlMapping methodAnnotation = method.getDeclaredAnnotation(UrlMapping.class);
                         String methodPath = (methodAnnotation != null) ? methodAnnotation.value() : "";
                         String fullPath = basePath + methodPath;
 
@@ -78,36 +80,89 @@ public class FrontController extends HttpServlet {
     }
 
     public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String uri = request.getRequestURI();
-        String contextPath = request.getContextPath();
-        String path = uri.substring(contextPath.length()); // enlève "/MyFramework"
+    String uri = request.getRequestURI();
+    String contextPath = request.getContextPath();
+    String path = uri.substring(contextPath.length());
 
-        Method method = routes.get(path);
+    Method method = routes.get(path);
 
-        if (method == null) {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            // response.getWriter().println("404 - Aucune route pour : " + path);
-            response.getWriter().println("Classes scannees :");
-            // for (String pkg : scannedPackages) {
-                for (String cls : scannedClasses) {
-                response.getWriter().println("  - " + cls);
-            // }
+    if (method == null) {
+        // URL partielle → chercher les routes qui commencent par ce path
+        PrintWriter out = response.getWriter();
+        boolean found = false;
+        for (Map.Entry<String, Method> entry : routes.entrySet()) {
+            if (entry.getKey().startsWith(path)) {
+                found = true;
+                out.println(entry.getKey()
+                    + " -> " + entry.getValue().getDeclaringClass().getName()
+                    + "." + entry.getValue().getName());
             }
-            return;
         }
-
-        try {
-            Object instance = instances.get(path);
-            System.out.println("[Framework] Requête : " + path
-                    + " → " + method.getDeclaringClass().getSimpleName() + "." + method.getName() + "()");
-
-            Object result = method.invoke(instance);
-
-            System.out.println("[Framework] Résultat : " + result);
-            response.getWriter().println(result); // on remet l'affichage du résultat de la route
-        } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().println("Erreur : " + e.getMessage());
+        // Rien trouvé avec ce préfixe → afficher toutes les routes
+        if (!found) {
+            out.println("=== Routes disponibles ===");
+            for (Map.Entry<String, Method> entry : routes.entrySet()) {
+                out.println(entry.getKey()
+                    + " -> " + entry.getValue().getDeclaringClass().getName()
+                    + "." + entry.getValue().getName());
+            }
         }
+        return;
     }
+
+    try {
+        response.getWriter().println("route trouvee : " + path
+            + " -> " + method.getDeclaringClass().getName()
+            + "." + method.getName());
+    } catch (Exception e) {
+        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        response.getWriter().println("Erreur : " + e.getMessage());
+    }
+}
+
+    // public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    //     String uri = request.getRequestURI();
+    //     String contextPath = request.getContextPath();
+    //     String path = uri.substring(contextPath.length()); // enlève "/MyFramework"
+
+    //     Method method = routes.get(path);
+
+    //     // if (method == null) {
+    //     //     response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+    //     //     // response.getWriter().println("404 - Aucune route pour : " + path);
+    //     //     response.getWriter().println("Classes scannees :");
+    //     //     // for (String pkg : scannedPackages) {
+    //     //         for (String cls : scannedClasses) {
+    //     //         response.getWriter().println("  - " + cls);
+    //     //     // }
+    //     //     }
+    //     //     return;
+    //     // }
+
+    //     if (method == null) {
+    //         response.setContentType("text/plain");
+    //         PrintWriter out = response.getWriter();
+
+    //         out.println("=== Routes disponibles ===");
+    //         for (Map.Entry<String, Method> entry : routes.entrySet()) {
+    //             String url = entry.getKey();
+    //             Method m = entry.getValue();
+    //             out.println(url + " -> " + m.getDeclaringClass().getName() + "." + m.getName() + "()");
+    //         }
+    //         return;
+    //     }
+
+    //     try {
+    //         response.getWriter().println("route trouvee : " + path
+    //         + " -> " + method.getDeclaringClass().getName() 
+    //         + "." + method.getName());
+    //         // Object result = method.invoke(instance);
+
+    //         // System.out.println("[Framework] Résultat : " + result);
+    //         // response.getWriter().println(result); // on remet l'affichage du résultat de la route
+    //     } catch (Exception e) {
+    //         response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    //         response.getWriter().println("Erreur : " + e.getMessage());
+    //     }
+    // }
 }
