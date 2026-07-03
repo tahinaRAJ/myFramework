@@ -54,7 +54,16 @@ public class FrontController extends HttpServlet {
 
                         UrlMethod key     = new UrlMethod(fullPath, httpMethod);
                         Mapping   mapping = new Mapping(clazz, method);
-
+                        if (routes.containsKey(key)) {
+                            Mapping existing = routes.get(key);
+                            throw new ServletException(
+                                "[ERREUR DOUBLON] " + httpMethod + " " + fullPath
+                                + " est declaree dans "
+                                + existing.getControllerClass().getName() + "." + existing.getMethod().getName()
+                                + " ET "
+                                + clazz.getName() + "." + method.getName()
+                            );
+                        }
                         routes.put(key, mapping);
 
                         System.out.println("[Framework] Route enregistrée : "
@@ -112,6 +121,7 @@ public class FrontController extends HttpServlet {
             }
             return;
         }
+        
 
         // Route trouvée → invoke via Mapping
         try {
