@@ -6,8 +6,13 @@ import dev.framework.annotation.UrlMapping;
 @Controller("/helloB")
 public class B {
 
-    @UrlMapping("/worldB")
-    public String world() {
-        return "Hello world !";
+    @UrlMapping(value = "/worldB", method = "GET")
+    public String getWorld() {
+        return "GET - Hello from B !";
+    }
+
+    @UrlMapping(value = "/worldB", method = "POST")
+    public String postWorld() {
+        return "POST - Hello from B !";
     }
 }

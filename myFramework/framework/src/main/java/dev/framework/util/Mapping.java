@@ -1,52 +1,21 @@
 package dev.framework.util;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import dev.framework.annotation.UrlMapping;
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfo;
-import io.github.classgraph.ClassInfoList;
-import io.github.classgraph.ScanResult;
+import java.lang.reflect.Method;
 
 public class Mapping {
+    private final Class<?> controllerClass;
+    private final Method method;
 
-    public static List<Class<?>> getUrlMappings(String basePackage) throws Exception {
-        List<Class<?>> result = new ArrayList<>();
-
-        try (ScanResult scanResult = new ClassGraph()
-                .enableClassInfo()
-                .enableAnnotationInfo()
-                .acceptPackages(basePackage)
-                .scan()) {
-
-            ClassInfoList UrlMappingClasses = scanResult
-                    .getClassesWithAnnotation(UrlMapping.class.getName());
-
-            for (ClassInfo classInfo : UrlMappingClasses) {
-                result.add(classInfo.loadClass());
-            }
-        }
-
-        return result;
+    public Mapping(Class<?> controllerClass, Method method) {
+        this.controllerClass = controllerClass;
+        this.method = method;
     }
 
-    public static List<Class<?>> getUrlMappings() throws Exception {
-        List<Class<?>> result = new ArrayList<>();
+    public String getClassName() { return controllerClass.getName(); }
+    public Method getMethod() { return method; }
+    public Class<?> getControllerClass() { return controllerClass; }
 
-        try (ScanResult scanResult = new ClassGraph()
-                .enableClassInfo()
-                .enableAnnotationInfo()
-                .scan()) {
-
-            ClassInfoList UrlMappingClasses = scanResult
-                    .getClassesWithAnnotation(UrlMapping.class.getName());
-
-            for (ClassInfo classInfo : UrlMappingClasses) {
-                result.add(classInfo.loadClass());
-            }
-        }
-
-        return result;
+    @Override
+    public String toString() {
+        return controllerClass.getName() + "." + method.getName() + "()";
     }
 }
