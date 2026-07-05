@@ -21,17 +21,13 @@ public class FrontController extends HttpServlet {
     public void init() throws ServletException {
         List<String> errors = (List<String>) getServletContext().getAttribute("frameworkErrors");
 
-        // Si le Listener a détecté des erreurs → HTTP 500, servlet non démarré
         if (errors != null && !errors.isEmpty()) {
-            throw new ServletException(String.join("\n", errors));
+            // Listener a détecté des erreurs — on ne charge rien
+            System.err.println("[FrontController] Erreurs détectées — chargement annulé");
+            return;
         }
 
         routes = (Map<UrlMethod, Mapping>) getServletContext().getAttribute("routes");
-
-        if (routes == null) {
-            throw new ServletException("[FrontController] Routes non initialisées. Vérifiez web.xml.");
-        }
-
         System.out.println("[FrontController] " + routes.size() + " route(s) chargée(s) — prêt");
     }
 
@@ -50,14 +46,19 @@ public class FrontController extends HttpServlet {
     public void processRequest(HttpServletRequest request, HttpServletResponse response,
             String httpMethod) throws IOException {
 
-        String uri     = request.getRequestURI();
-        String ctxPath = request.getContextPath();
-        String path    = uri.substring(ctxPath.length());
+        // routes null → erreur détectée au démarrage → 404 natif Tomcat
+        if (routes == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        PrintWriter out = response.getWriter();
+        String uri      = request.getRequestURI();
+        String ctxPath  = request.getContextPath();
+        String path     = uri.substring(ctxPath.length());
 
         UrlMethod key     = new UrlMethod(path, httpMethod);
         Mapping   mapping = routes.get(key);
-
-        PrintWriter out = response.getWriter();
 
         if (mapping == null) {
             boolean found = false;
@@ -78,7 +79,6 @@ public class FrontController extends HttpServlet {
             return;
         }
 
-        // Route trouvée → invoke
         try {
             Object instance = mapping.getControllerClass().getDeclaredConstructor().newInstance();
             Object result   = mapping.getMethod().invoke(instance);
