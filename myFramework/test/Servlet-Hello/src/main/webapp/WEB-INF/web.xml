@@ -5,12 +5,6 @@
          https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
          version="5.0">
 
-    <!-- Package à scanner -->
-    <context-param>
-        <param-name>basePackage</param-name>
-        <param-value>test.example2</param-value>
-    </context-param>
-
     <!-- Préfixe et suffixe des vues JSP -->
     <context-param>
         <param-name>view.prefix</param-name>
