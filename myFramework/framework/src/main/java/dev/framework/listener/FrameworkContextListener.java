@@ -1,90 +1,67 @@
 package dev.framework.listener;
 
-import dev.framework.annotation.Controller;
-import dev.framework.annotation.UrlMapping;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+import org.springframework.context.ApplicationContext;
+import org.springframework.web.context.support.WebApplicationContextUtils;
+
 import dev.framework.util.LoadClass;
 import dev.framework.util.Mapping;
 import dev.framework.util.UrlMethod;
-import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 public class FrameworkContextListener implements ServletContextListener {
+
+    String packageName;
+    String viewPrefix;
+    String viewSuffix;
+    Map<UrlMethod, Mapping> toutesLesRoutes;
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
-        ServletContext ctx = sce.getServletContext();
-        String basePackage = ctx.getInitParameter("basePackage");
-
-        Map<UrlMethod, Mapping> routes = new HashMap<>();
-        List<String> errors = new ArrayList<>();
-
-        System.out.println("[Listener] Démarrage de la vérification...");
+        System.out.println("[INIT] Tomcat démarre l'application. Lancement du scan des routes...");
 
         try {
-            List<Class<?>> controllers;
-            if (basePackage != null && !basePackage.isEmpty()) {
-                controllers = LoadClass.getControllers(basePackage);
-            } else {
-                controllers = LoadClass.getControllers();
-            }
+            ApplicationContext springContext = WebApplicationContextUtils
+                    .getRequiredWebApplicationContext(sce.getServletContext());
 
-            for (Class<?> clazz : controllers) {
-                Controller classAnnotation = clazz.getDeclaredAnnotation(Controller.class);
-                String basePath = (classAnnotation != null) ? classAnnotation.value() : "";
-
-                for (Method method : clazz.getDeclaredMethods()) {
-                    if (method.isAnnotationPresent(UrlMapping.class)) {
-                        UrlMapping urlMapping = method.getDeclaredAnnotation(UrlMapping.class);
-                        String     httpMethod = urlMapping.method().toUpperCase();
-                        String     fullPath   = basePath + urlMapping.value();
-                        UrlMethod  key        = new UrlMethod(fullPath, httpMethod);
-                        Mapping    mapping    = new Mapping(clazz, method);
-
-                        if (routes.containsKey(key)) {
-                            // Doublon — on enregistre et on STOPPE tout
-                            Mapping existing = routes.get(key);
-                            String error = "[ERREUR DOUBLON] " + httpMethod + " " + fullPath
-                                    + " declaree dans "
-                                    + existing.getControllerClass().getName() + "." + existing.getMethod().getName()
-                                    + " ET "
-                                    + clazz.getName() + "." + method.getName();
-                            errors.add(error);
-                            System.err.println("[Listener] " + error);
-                            // Ne pas continuer à lire le reste
-                            ctx.setAttribute("frameworkErrors", errors);
-                            ctx.setAttribute("routes", null);
-                            return;
-                        }
-
-                        routes.put(key, mapping);
-                        System.out.println("[Listener] Route OK : " + httpMethod + " " + fullPath + " → " + mapping);
-                    }
+            toutesLesRoutes = new HashMap<>();
+            Properties prop = new Properties();
+            try (InputStream input = LoadClass.class.getClassLoader().getResourceAsStream("config.properties")) {
+                if (input == null) {
+                    throw new RuntimeException("[ERREUR] Impossible de trouver le fichier config.properties.");
                 }
+                prop.load(input);
+                packageName = prop.getProperty("app.package");
+            } catch (IOException e) {
+                throw new RuntimeException("Erreur lors de la lecture de config.properties", e);
             }
 
-        } catch (Exception e) {
-            errors.add("[ERREUR CRITIQUE] " + e.getMessage());
-            System.err.println("[Listener] Erreur critique : " + e.getMessage());
-            ctx.setAttribute("frameworkErrors", errors);
-            ctx.setAttribute("routes", null);
-            return;
-        }
+            LoadClass.loadUrlMappingsWithMethod(packageName, toutesLesRoutes);
 
-        // Aucune erreur — tout est OK
-        ctx.setAttribute("routes", routes);
-        ctx.setAttribute("frameworkErrors", errors);
-        System.out.println("[Listener] Vérification terminée — " + routes.size() + " route(s), aucune erreur");
+            viewPrefix = sce.getServletContext().getInitParameter("view.prefix");
+            viewSuffix = sce.getServletContext().getInitParameter("view.suffix");
+
+            sce.getServletContext().setAttribute("routesWithMethod", toutesLesRoutes);
+            sce.getServletContext().setAttribute("prefix", viewPrefix);
+            sce.getServletContext().setAttribute("suffix", viewSuffix);
+            sce.getServletContext().setAttribute("springContext", springContext);
+
+            System.out.println("[SUCCESS] Scan terminé avec succès. " + toutesLesRoutes.size() + " routes chargées.");
+
+        } catch (IllegalStateException e) {
+            System.err.println("[ERREUR CRITIQUE DÉMARRAGE] " + e.getMessage());
+            throw new RuntimeException("Échec du déploiement de l'application à cause d'un conflit de routes.", e);
+        }
     }
 
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
-        System.out.println("[Listener] Arrêt du framework");
+        System.out.println("[SHUTDOWN] L'application s'arrête.");
     }
 }

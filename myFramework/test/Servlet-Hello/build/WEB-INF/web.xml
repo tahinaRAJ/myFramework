@@ -5,18 +5,30 @@
          https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
          version="5.0">
 
-    <!-- Package à scanner — lu par le Listener -->
     <context-param>
-        <param-name>basePackage</param-name>
-        <param-value>test.example2</param-value>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>/WEB-INF/applicationContext.xml</param-value>
     </context-param>
 
-    <!-- Listener — s'exécute AVANT le Servlet -->
+     <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+
+   
     <listener>
         <listener-class>dev.framework.listener.FrameworkContextListener</listener-class>
     </listener>
 
-    <!-- Servlet principal -->
+    <context-param>
+        <param-name>view.prefix</param-name>
+        <param-value>/WEB-INF/views/</param-value>
+    </context-param>
+
+    <context-param>
+        <param-name>view.suffix</param-name>
+        <param-value>.jsp</param-value>
+    </context-param>
+
     <servlet>
         <servlet-name>MyFramework</servlet-name>
         <servlet-class>dev.framework.servlet.FrontController</servlet-class>

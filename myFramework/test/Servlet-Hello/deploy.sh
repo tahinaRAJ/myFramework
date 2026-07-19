@@ -15,24 +15,16 @@ JAKARTA_SERVLET_API="/opt/tomcat11/lib/servlet-api.jar"
 
 echo "Vérification du framework JAR..."
 
-if [ ! -f "$FRAMEWORK_JAR_TARGET" ]; then
-    echo "Framework JAR manquant dans lib/, recherche..."
-    if [ -f "$FRAMEWORK_JAR_SOURCE" ]; then
-        echo "Framework JAR trouvé"
-        cp "$FRAMEWORK_JAR_SOURCE" "$FRAMEWORK_JAR_TARGET"
-    else
-        echo "Framework JAR non trouvé dans $FRAMEWORK_JAR_SOURCE"
-        echo "Compilez d'abord le framework :"
-        echo "   cd ../../framework"
-        echo "   mvn clean install"
-        exit 1
-    fi
+# Toujours supprimer et remplacer par la dernière version compilée
+if [ -f "$FRAMEWORK_JAR_SOURCE" ]; then
+    rm -f "$FRAMEWORK_JAR_TARGET"
+    cp "$FRAMEWORK_JAR_SOURCE" "$FRAMEWORK_JAR_TARGET"
+    echo "Framework JAR mis à jour"
 else
-    echo "Framework JAR déjà présent"
-fi
-
-if [ ! -f "$JAKARTA_SERVLET_API" ]; then
-    echo "Erreur: $JAKARTA_SERVLET_API manquant"
+    echo "Framework JAR non trouvé dans $FRAMEWORK_JAR_SOURCE"
+    echo "Compilez d'abord le framework :"
+    echo "   cd ../../framework"
+    echo "   mvn clean install"
     exit 1
 fi
 
