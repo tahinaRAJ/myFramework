@@ -13,7 +13,11 @@ public class A {
     public ViewUtil worldtest() {
         ViewUtil view = new ViewUtil();
         view.setView("worldtest");
+<<<<<<< HEAD
         view.addValue("test", List.of("Hello world !"));
+=======
+        view.addValue("test",  List.of("Hello world !"));
+>>>>>>> 8feca03f491a929a72ce164b9b66b7758d83d613
         view.addValue("test2", List.of("test du view"));
         view.addValue("test3", List.of("test du view 2"));
         return view;    

@@ -58,11 +58,7 @@ public class FrontController extends HttpServlet {
             System.out.println("Route trouvée : " + urlMethod + " -> " + mapping);
 
             try {
-                // Le controller est récupéré depuis le contexte Spring (et non plus via
-                // reflection newInstance()) : Spring instancie le bean et injecte au passage
-                // tous ses @Autowired (Service, Repository, etc.)
-                Object controller = springContext.getBean(mapping.getControllerClass());
-
+                Object controller = mapping.getControllerClass().getDeclaredConstructor().newInstance();
                 Method controllerMethod = mapping.getMethod();
                 Class<?>[] parameterTypes = controllerMethod.getParameterTypes();
                 Object[] parameters = new Object[parameterTypes.length];
@@ -71,10 +67,6 @@ public class FrontController extends HttpServlet {
                     Class<?> paramType = parameterTypes[i];
                     if (paramType.equals(ApplicationContext.class)) {
                         parameters[i] = springContext;
-                    } else if (paramType.equals(HttpServletRequest.class)) {
-                        parameters[i] = request;
-                    } else if (paramType.equals(HttpServletResponse.class)) {
-                        parameters[i] = response;
                     } else {
                         parameters[i] = null;
                     }
@@ -84,7 +76,7 @@ public class FrontController extends HttpServlet {
 
                 // CAS 1 : ViewUtil → forward vers JSP
                 if (result instanceof ViewUtil mav) {
-                    for (Map.Entry<String, java.util.List<?>> en : mav.getValues().entrySet()) {
+                    for (Map.Entry<String, List<?>> en : mav.getValues().entrySet()) {
                         request.setAttribute(en.getKey(), en.getValue());
                     }
                     if (mav.getView() != null && !mav.getView().isBlank()) {
@@ -109,7 +101,8 @@ public class FrontController extends HttpServlet {
                 throw new ServletException(
                         "Type de retour non supporté pour " + urlMethod + " : " + result.getClass().getName());
 
-            } catch (IllegalAccessException | InvocationTargetException e) {
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                    | NoSuchMethodException e) {
                 throw new RuntimeException("Impossible d'exécuter la méthode liée à " + urlMethod, e);
             }
 

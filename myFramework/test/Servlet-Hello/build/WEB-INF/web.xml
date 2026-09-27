@@ -5,9 +5,6 @@
          https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
          version="5.0">
 
-<<<<<<< HEAD
-    <!-- Préfixe et suffixe des vues JSP -->
-=======
     <context-param>
         <param-name>contextConfigLocation</param-name>
         <param-value>/WEB-INF/applicationContext.xml</param-value>
@@ -22,7 +19,6 @@
         <listener-class>dev.framework.listener.FrameworkContextListener</listener-class>
     </listener>
 
->>>>>>> 8feca03f491a929a72ce164b9b66b7758d83d613
     <context-param>
         <param-name>view.prefix</param-name>
         <param-value>/WEB-INF/views/</param-value>
@@ -33,31 +29,6 @@
         <param-value>.jsp</param-value>
     </context-param>
 
-<<<<<<< HEAD
-    <!-- Config du contexte Spring : classe Java annotée (pas de XML) -->
-    <context-param>
-        <param-name>contextClass</param-name>
-        <param-value>org.springframework.web.context.support.AnnotationConfigWebApplicationContext</param-value>
-    </context-param>
-    <context-param>
-        <param-name>contextConfigLocation</param-name>
-        <param-value>test.example2.config.AppConfig</param-value>
-    </context-param>
-
-    <!-- Charge le contexte Spring : DOIT être déclaré avant FrameworkContextListener,
-         car ce dernier va le récupérer via WebApplicationContextUtils -->
-    <listener>
-        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
-    </listener>
-
-    <!-- Listener du framework maison : scanne les routes (@Controller/@UrlMapping) -->
-    <listener>
-        <listener-class>dev.framework.listener.FrameworkContextListener</listener-class>
-    </listener>
-
-    <!-- Servlet principal -->
-=======
->>>>>>> 8feca03f491a929a72ce164b9b66b7758d83d613
     <servlet>
         <servlet-name>MyFramework</servlet-name>
         <servlet-class>dev.framework.servlet.FrontController</servlet-class>
