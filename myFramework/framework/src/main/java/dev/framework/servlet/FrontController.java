@@ -2,11 +2,14 @@ package dev.framework.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 
 import org.springframework.context.ApplicationContext;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.framework.util.LoadClass;
 import dev.framework.util.Mapping;
@@ -25,6 +28,11 @@ public class FrontController extends HttpServlet {
     String viewSuffix;
     ApplicationContext springContext;
 
+    /** Classe de l'annotation @Rest (ex: dev.framework.annotation.Rest), résolue une seule fois au démarrage. */
+    Class<? extends Annotation> restAnnotationClass;
+
+    final ObjectMapper objectMapper = new ObjectMapper();
+
     @SuppressWarnings("unchecked")
     @Override
     public void init() throws ServletException {
@@ -33,6 +41,15 @@ public class FrontController extends HttpServlet {
         viewPrefix       = (String)                  getServletContext().getAttribute("prefix");
         viewSuffix       = (String)                  getServletContext().getAttribute("suffix");
         springContext    = (ApplicationContext)       getServletContext().getAttribute("springContext");
+
+        String annotationRest = (String) getServletContext().getAttribute("annotationRest");
+        if (annotationRest != null && !annotationRest.isBlank()) {
+            try {
+                restAnnotationClass = Class.forName(annotationRest).asSubclass(Annotation.class);
+            } catch (ClassNotFoundException e) {
+                throw new ServletException("Annotation REST introuvable : " + annotationRest, e);
+            }
+        }
     }
 
     @Override
@@ -58,7 +75,10 @@ public class FrontController extends HttpServlet {
             System.out.println("Route trouvée : " + urlMethod + " -> " + mapping);
 
             try {
-                Object controller = mapping.getControllerClass().getDeclaredConstructor().newInstance();
+                // Le controller est récupéré depuis le contexte Spring : Spring l'instancie
+                // et injecte au passage tous ses @Autowired (Service, Repository, etc.)
+                Object controller = springContext.getBean(mapping.getControllerClass());
+
                 Method controllerMethod = mapping.getMethod();
                 Class<?>[] parameterTypes = controllerMethod.getParameterTypes();
                 Object[] parameters = new Object[parameterTypes.length];
@@ -67,6 +87,10 @@ public class FrontController extends HttpServlet {
                     Class<?> paramType = parameterTypes[i];
                     if (paramType.equals(ApplicationContext.class)) {
                         parameters[i] = springContext;
+                    } else if (paramType.equals(HttpServletRequest.class)) {
+                        parameters[i] = request;
+                    } else if (paramType.equals(HttpServletResponse.class)) {
+                        parameters[i] = response;
                     } else {
                         parameters[i] = null;
                     }
@@ -74,9 +98,22 @@ public class FrontController extends HttpServlet {
 
                 Object result = controllerMethod.invoke(controller, parameters);
 
-                // CAS 1 : ViewUtil → forward vers JSP
+                // CAS 1 : la méthode est annotée @Rest -> on sérialise le résultat en JSON,
+                // quel que soit son type (objet, liste, String...)
+                boolean isRest = restAnnotationClass != null
+                        && controllerMethod.isAnnotationPresent(restAnnotationClass);
+
+                if (isRest) {
+                    response.setContentType("application/json;charset=UTF-8");
+                    try (PrintWriter out = response.getWriter()) {
+                        out.print(objectMapper.writeValueAsString(result));
+                    }
+                    return;
+                }
+
+                // CAS 2 : ViewUtil (pas de @Rest) → forward vers une JSP
                 if (result instanceof ViewUtil mav) {
-                    for (Map.Entry<String, List<?>> en : mav.getValues().entrySet()) {
+                    for (Map.Entry<String, java.util.List<?>> en : mav.getValues().entrySet()) {
                         request.setAttribute(en.getKey(), en.getValue());
                     }
                     if (mav.getView() != null && !mav.getView().isBlank()) {
@@ -88,7 +125,7 @@ public class FrontController extends HttpServlet {
                     throw new ServletException("Aucune vue définie pour " + urlMethod);
                 }
 
-                // CAS 2 : String → texte brut
+                // CAS 3 : String (pas de @Rest) → texte brut
                 if (result instanceof String text) {
                     response.setContentType("text/plain;charset=UTF-8");
                     try (PrintWriter out = response.getWriter()) {
@@ -99,10 +136,10 @@ public class FrontController extends HttpServlet {
                 }
 
                 throw new ServletException(
-                        "Type de retour non supporté pour " + urlMethod + " : " + result.getClass().getName());
+                        "Type de retour non supporté pour " + urlMethod + " : " + result.getClass().getName()
+                                + " (ajoute @Rest sur la méthode pour renvoyer du JSON, ou renvoie un ViewUtil pour une vue)");
 
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException
-                    | NoSuchMethodException e) {
+            } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException("Impossible d'exécuter la méthode liée à " + urlMethod, e);
             }
 

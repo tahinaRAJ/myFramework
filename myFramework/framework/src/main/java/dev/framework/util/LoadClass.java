@@ -114,12 +114,20 @@ public class LoadClass {
                     Class<?> clazz = Class.forName(classInfo.getName());
                     if (!clazz.isAnnotationPresent(controllerAnnotationClass)) continue;
 
+                    // Get the Controller path
+                    Annotation controllerAnnotation = clazz.getAnnotation(controllerAnnotationClass);
+                    String controllerPath = (String) controllerAnnotationClass.getMethod("value").invoke(controllerAnnotation);
+
                     for (Method method : clazz.getDeclaredMethods()) {
                         Annotation urlMapping = method.getAnnotation(urlMappingAnnotationClass);
                         if (urlMapping != null) {
-                            String url        = (String) urlMappingAnnotationClass.getMethod("value").invoke(urlMapping);
+                            String urlMappingPath = (String) urlMappingAnnotationClass.getMethod("value").invoke(urlMapping);
                             String methodType = (String) urlMappingAnnotationClass.getMethod("method").invoke(urlMapping);
-                            UrlMethod urlMethod = new UrlMethod(url, methodType);
+                            
+                            // Combine controller path and method path
+                            String fullUrl = controllerPath + urlMappingPath;
+                            
+                            UrlMethod urlMethod = new UrlMethod(fullUrl, methodType);
 
                             if (routes.containsKey(urlMethod)) {
                                 Mapping existing = routes.get(urlMethod);
@@ -127,7 +135,7 @@ public class LoadClass {
                                         [ERREUR] Conflit de routes détecté !
                                         La route [%s %s] est déjà associée à : %s.%s()
                                         Impossible de la réassigner à : %s.%s()
-                                        """.formatted(methodType, url,
+                                        """.formatted(methodType, fullUrl,
                                         existing.getControllerClass().getName(), existing.getMethod().getName(),
                                         clazz.getName(), method.getName()));
                             }
@@ -165,12 +173,20 @@ public class LoadClass {
                     Class<?> clazz = Class.forName(classInfo.getName());
                     if (!clazz.isAnnotationPresent(controllerAnnotationClass)) continue;
 
+                    // Get the Controller path
+                    Annotation controllerAnnotation = clazz.getAnnotation(controllerAnnotationClass);
+                    String controllerPath = (String) controllerAnnotationClass.getMethod("value").invoke(controllerAnnotation);
+
                     for (Method method : clazz.getDeclaredMethods()) {
                         Annotation urlMapping = method.getAnnotation(urlMappingAnnotationClass);
                         if (urlMapping != null) {
-                            String url        = (String) urlMappingAnnotationClass.getMethod("value").invoke(urlMapping);
+                            String urlMappingPath = (String) urlMappingAnnotationClass.getMethod("value").invoke(urlMapping);
                             String methodType = (String) urlMappingAnnotationClass.getMethod("method").invoke(urlMapping);
-                            UrlMethod urlMethod = new UrlMethod(url, methodType);
+                            
+                            // Combine controller path and method path
+                            String fullUrl = controllerPath + urlMappingPath;
+                            
+                            UrlMethod urlMethod = new UrlMethod(fullUrl, methodType);
 
                             if (routes.containsKey(urlMethod)) {
                                 Mapping existing = routes.get(urlMethod);
@@ -178,7 +194,7 @@ public class LoadClass {
                                         [ERREUR] Conflit de routes détecté !
                                         La route [%s %s] est déjà associée à : %s.%s()
                                         Impossible de la réassigner à : %s.%s()
-                                        """.formatted(methodType, url,
+                                        """.formatted(methodType, fullUrl,
                                         existing.getControllerClass().getName(), existing.getMethod().getName(),
                                         clazz.getName(), method.getName()));
                             }

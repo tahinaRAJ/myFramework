@@ -3,6 +3,7 @@ dev/framework/util/LoadClass.class
 dev/framework/util/Mapping.class
 dev/framework/util/ViewUtil.class
 dev/framework/servlet/FrontController.class
+dev/framework/annotation/Rest.class
 dev/framework/listener/FrameworkContextListener.class
 dev/framework/util/UrlMethod.class
 dev/framework/annotation/Controller.class

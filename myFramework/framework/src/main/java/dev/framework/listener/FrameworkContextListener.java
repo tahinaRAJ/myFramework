@@ -20,6 +20,7 @@ public class FrameworkContextListener implements ServletContextListener {
     String packageName;
     String viewPrefix;
     String viewSuffix;
+    String annotationRest;
     Map<UrlMethod, Mapping> toutesLesRoutes;
 
     @Override
@@ -38,6 +39,7 @@ public class FrameworkContextListener implements ServletContextListener {
                 }
                 prop.load(input);
                 packageName = prop.getProperty("app.package");
+                annotationRest = prop.getProperty("annotation.rest");
             } catch (IOException e) {
                 throw new RuntimeException("Erreur lors de la lecture de config.properties", e);
             }
@@ -51,6 +53,7 @@ public class FrameworkContextListener implements ServletContextListener {
             sce.getServletContext().setAttribute("prefix", viewPrefix);
             sce.getServletContext().setAttribute("suffix", viewSuffix);
             sce.getServletContext().setAttribute("springContext", springContext);
+            sce.getServletContext().setAttribute("annotationRest", annotationRest);
 
             System.out.println("[SUCCESS] Scan terminé avec succès. " + toutesLesRoutes.size() + " routes chargées.");
 
