@@ -1,0 +1,12 @@
+test/example2/service/ProductService.class
+test/example2/ProductController.class
+com/example/C.class
+test/example2/A.class
+test/example2/entity/Product.class
+test/example/Test.class
+test/example2/B.class
+test/example2/config/AppConfig.class
+test/example2/repository/ProductRepository.class
+test/example2/TestController2.class
+test/example2/TestController.class
+test/example2/Test.class

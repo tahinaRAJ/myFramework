@@ -1,4 +1,4 @@
-package test.exemple2;
+package test.example2;
 
 import javax.swing.text.View;
 
