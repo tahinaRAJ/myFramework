@@ -36,4 +36,8 @@ public class ViewUtil {
     public void addValue(String key, List<?> value) {
         this.values.put(key, value);
     }
+
+    public void addValue(String key, String value) {
+        this.values.put(key, List.of(value));
+    }
 }
