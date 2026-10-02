@@ -1,7 +1,5 @@
 package test.example2;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 
 import dev.framework.annotation.Controller;
@@ -9,7 +7,6 @@ import dev.framework.annotation.Rest;
 import dev.framework.annotation.UrlMapping;
 import dev.framework.util.ViewUtil;
 import jakarta.servlet.http.HttpServletRequest;
-import test.example2.entity.Product;
 import test.example2.service.ProductService;
 
 /**
@@ -37,9 +34,17 @@ public class ProductController {
      */
     @UrlMapping(value = "/api", method = "GET")
     @Rest
-    public List<Product> apiList() {
-        return productService.findAll();
+    public Object apiProducts(HttpServletRequest request) {
+        String idParam = request.getParameter("id");
+        if (idParam == null || idParam.isBlank()) {
+            return productService.findAll();
+        }
+
+        Long id = Long.parseLong(idParam);
+        return productService.findById(id).orElse(null);
     }
+
+
 
     @UrlMapping(value = "/add", method = "POST")
     public ViewUtil add(HttpServletRequest request) {
