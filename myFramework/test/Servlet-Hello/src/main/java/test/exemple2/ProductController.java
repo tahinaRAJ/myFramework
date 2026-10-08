@@ -7,6 +7,7 @@ import dev.framework.annotation.Rest;
 import dev.framework.annotation.UrlMapping;
 import dev.framework.util.ViewUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import test.example2.entity.Product;
 import test.example2.service.ProductService;
 
 /**
@@ -47,10 +48,9 @@ public class ProductController {
 
 
     @UrlMapping(value = "/add", method = "POST")
-    public ViewUtil add(HttpServletRequest request) {
-        String name = request.getParameter("name");
-        double price = Double.parseDouble(request.getParameter("price"));
-        productService.save(name, price);
+    public ViewUtil add(Product product) {
+        // product est construit automatiquement depuis les champs du formulaire (name, price)
+        productService.save(product);
 
         ViewUtil view = new ViewUtil();
         view.setView("products");
