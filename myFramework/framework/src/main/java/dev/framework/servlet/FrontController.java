@@ -11,6 +11,7 @@ import org.springframework.context.ApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import dev.framework.util.BindParam;
 import dev.framework.util.LoadClass;
 import dev.framework.util.Mapping;
 import dev.framework.util.UrlMethod;
@@ -92,7 +93,12 @@ public class FrontController extends HttpServlet {
                     } else if (paramType.equals(HttpServletResponse.class)) {
                         parameters[i] = response;
                     } else {
-                        parameters[i] = null;
+                        // Autre type (ex: Product) : construit depuis le formulaire
+                        try {
+                            parameters[i] = BindParam.bind(paramType, request);
+                        } catch (Exception e) {
+                            throw new ServletException("Erreur de liaison des paramètres pour " + urlMethod, e);
+                        }
                     }
                 }
 
