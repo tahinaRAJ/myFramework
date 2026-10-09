@@ -85,21 +85,7 @@ public class FrontController extends HttpServlet {
                 Object[] parameters = new Object[parameterTypes.length];
 
                 for (int i = 0; i < parameterTypes.length; i++) {
-                    Class<?> paramType = parameterTypes[i];
-                    if (paramType.equals(ApplicationContext.class)) {
-                        parameters[i] = springContext;
-                    } else if (paramType.equals(HttpServletRequest.class)) {
-                        parameters[i] = request;
-                    } else if (paramType.equals(HttpServletResponse.class)) {
-                        parameters[i] = response;
-                    } else {
-                        // Autre type (ex: Product) : construit depuis le formulaire
-                        try {
-                            parameters[i] = BindParam.bind(paramType, request);
-                        } catch (Exception e) {
-                            throw new ServletException("Erreur de liaison des paramètres pour " + urlMethod, e);
-                        }
-                    }
+                    parameters[i] = populateParameter(controllerMethod, i, request, response, urlMethod);
                 }
 
                 Object result = controllerMethod.invoke(controller, parameters);
@@ -159,5 +145,49 @@ public class FrontController extends HttpServlet {
                 });
             }
         }
+    }
+
+    /**
+     * Détermine la valeur à passer pour le paramètre n°index de la méthode du controller :
+     *  - ApplicationContext / HttpServletRequest / HttpServletResponse : injectés tels quels
+     *  - type simple (String, int, Long, double, boolean, LocalDate, enum...) : lu dans la requête
+     *    sous le NOM du paramètre Java (nécessite la compilation avec -parameters, activée
+     *    par spring-boot-starter-parent)
+     *  - autre type (ex: Product) : construit depuis les champs du formulaire via BindParam.bind
+     */
+    private Object populateParameter(Method controllerMethod, int index, HttpServletRequest request,
+            HttpServletResponse response, UrlMethod urlMethod) throws ServletException {
+        Class<?> paramType = controllerMethod.getParameterTypes()[index];
+        String paramName = controllerMethod.getParameters()[index].getName();
+
+        if (paramType.equals(ApplicationContext.class)) {
+            return springContext;
+        }
+        if (paramType.equals(HttpServletRequest.class)) {
+            return request;
+        }
+        if (paramType.equals(HttpServletResponse.class)) {
+            return response;
+        }
+
+        try {
+            if (isSimpleType(paramType)) {
+                String value = request.getParameter(paramName);
+                if (value == null || value.isBlank()) {
+                    return BindParam.defaultValue(paramType);
+                }
+                return BindParam.convert(value, paramType);
+            }
+            return BindParam.bind(paramType, request);
+        } catch (Exception e) {
+            throw new ServletException(
+                    "Erreur lors de la liaison du paramètre '" + paramName + "' pour " + urlMethod, e);
+        }
+    }
+
+    private boolean isSimpleType(Class<?> t) {
+        return t.isPrimitive() || t.equals(String.class) || t.equals(java.time.LocalDate.class)
+                || t.isEnum() || Number.class.isAssignableFrom(t)
+                || t.equals(Boolean.class) || t.equals(Character.class);
     }
 }
