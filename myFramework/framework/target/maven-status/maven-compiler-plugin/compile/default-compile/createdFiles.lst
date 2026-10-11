@@ -7,3 +7,4 @@ dev/framework/annotation/Rest.class
 dev/framework/listener/FrameworkContextListener.class
 dev/framework/util/UrlMethod.class
 dev/framework/annotation/Controller.class
+dev/framework/util/BindParam.class

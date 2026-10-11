@@ -59,8 +59,8 @@ public class ProductController {
     }
 
     @UrlMapping(value = "/delete", method = "POST")
-    public ViewUtil delete(HttpServletRequest request) {
-        Long id = Long.parseLong(request.getParameter("id"));
+    public ViewUtil delete(Long id) {
+        // id est lu dans la requête sous le nom du paramètre Java ("id")
         productService.deleteById(id);
 
         ViewUtil view = new ViewUtil();
