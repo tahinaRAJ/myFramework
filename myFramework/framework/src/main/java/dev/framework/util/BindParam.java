@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 import java.time.LocalDate;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Part;
 
 /**
  * Liaison requête HTTP -> objets Java.
@@ -11,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
  * - bind(...)    : construit un objet (ex: Product) en appelant ses setters, avec les
  *                  paramètres de la requête portant le même nom que la propriété
  *                  (setName -> "name", setPrice -> "price"...).
+ *                  Gère aussi FileUpload / FileUpload[] (upload) et les objets imbriqués (prefix.prop).
  * - convert(...) : convertit une String vers le type voulu (int, long, double, boolean,
  *                  char, LocalDate, enum, ...). Réutilisé aussi pour les paramètres simples
  *                  des méthodes de controller (ex: delete(Long id)).
@@ -18,6 +20,14 @@ import jakarta.servlet.http.HttpServletRequest;
 public class BindParam {
 
     public static Object bind(Class<?> clazz, HttpServletRequest request) throws Exception {
+        return bind(clazz, request, "");
+    }
+
+    /**
+     * prefix permet de remplir les objets imbriqués : pour setAuteur(Auteur) le binder
+     * lit "auteur.nom", "auteur.age"... (récursif).
+     */
+    private static Object bind(Class<?> clazz, HttpServletRequest request, String prefix) throws Exception {
         Object obj = clazz.getDeclaredConstructor().newInstance();
 
         for (Method method : clazz.getMethods()) {
@@ -26,16 +36,69 @@ public class BindParam {
                 continue;
             }
 
-            String propertyName = Character.toLowerCase(method.getName().charAt(3)) + method.getName().substring(4);
-            String propertyValue = request.getParameter(propertyName);
-            if (propertyValue == null || propertyValue.isBlank()) {
-                continue; // champ absent du formulaire -> valeur par défaut conservée
-            }
+            String prop = Character.toLowerCase(method.getName().charAt(3)) + method.getName().substring(4);
+            String fullName = prefix + prop;
+            Class<?> type = method.getParameterTypes()[0];
 
-            method.invoke(obj, convert(propertyValue, method.getParameterTypes()[0]));
+            if (isSimple(type)) {
+                String value = request.getParameter(fullName);
+                if (value == null || value.isBlank()) {
+                    continue; // champ absent -> valeur par défaut conservée
+                }
+                method.invoke(obj, convert(value, type));
+
+            } else if (type == FileUpload.class) {
+                if (!FileUpload.isMultipart(request)) {
+                    continue;
+                }
+                Part part = request.getPart(fullName);
+                FileUpload file = part == null ? null : FileUpload.convertToFileUpload(part);
+                if (file != null) {
+                    method.invoke(obj, file);
+                }
+
+            } else if (type == FileUpload[].class) {
+                if (!FileUpload.isMultipart(request)) {
+                    continue;
+                }
+                FileUpload[] files = FileUpload.fromAll(request, fullName);
+                if (files.length > 0) {
+                    method.invoke(obj, (Object) files);
+                }
+
+            } else if (hasParamStartingWith(request, fullName + ".")) {
+                method.invoke(obj, bind(type, request, fullName + "."));
+            }
         }
 
         return obj;
+    }
+
+    private static boolean hasParamStartingWith(HttpServletRequest request, String start) throws Exception {
+        for (String key : request.getParameterMap().keySet()) {
+            if (key.startsWith(start)) {
+                return true;
+            }
+        }
+        if (FileUpload.isMultipart(request)) {
+            for (Part part : request.getParts()) {
+                if (part.getName().startsWith(start)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Types convertibles depuis une simple String. */
+    public static boolean isSimple(Class<?> t) {
+        return t.isPrimitive()
+                || t == String.class
+                || Number.class.isAssignableFrom(t)
+                || t == Boolean.class
+                || t == Character.class
+                || t == LocalDate.class
+                || t.isEnum();
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
