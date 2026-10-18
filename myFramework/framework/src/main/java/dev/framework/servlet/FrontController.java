@@ -12,6 +12,7 @@ import org.springframework.context.ApplicationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.framework.util.BindParam;
+import dev.framework.util.FileUpload;
 import dev.framework.util.LoadClass;
 import dev.framework.util.Mapping;
 import dev.framework.util.UrlMethod;
@@ -153,6 +154,7 @@ public class FrontController extends HttpServlet {
      *  - type simple (String, int, Long, double, boolean, LocalDate, enum...) : lu dans la requête
      *    sous le NOM du paramètre Java (nécessite la compilation avec -parameters, activée
      *    par spring-boot-starter-parent)
+     *  - FileUpload / FileUpload[] : fichier(s) du formulaire multipart (nom du champ = nom du paramètre)
      *  - autre type (ex: Product) : construit depuis les champs du formulaire via BindParam.bind
      */
     private Object populateParameter(Method controllerMethod, int index, HttpServletRequest request,
@@ -171,6 +173,19 @@ public class FrontController extends HttpServlet {
         }
 
         try {
+            if (paramType.equals(FileUpload.class)) {
+                if (!FileUpload.isMultipart(request)) {
+                    return null;
+                }
+                jakarta.servlet.http.Part part = request.getPart(paramName);
+                return part == null ? null : FileUpload.convertToFileUpload(part);
+            }
+            if (paramType.equals(FileUpload[].class)) {
+                if (!FileUpload.isMultipart(request)) {
+                    return new FileUpload[0];
+                }
+                return FileUpload.fromAll(request, paramName);
+            }
             if (isSimpleType(paramType)) {
                 String value = request.getParameter(paramName);
                 if (value == null || value.isBlank()) {
