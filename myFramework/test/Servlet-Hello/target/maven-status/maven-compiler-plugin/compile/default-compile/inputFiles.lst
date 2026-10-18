@@ -7,8 +7,11 @@
 /home/rajaobelina/Documents/s4/web_dynamique/myFramework/myFramework/test/Servlet-Hello/src/main/java/test/exemple2/Test.java
 /home/rajaobelina/Documents/s4/web_dynamique/myFramework/myFramework/test/Servlet-Hello/src/main/java/test/exemple2/TestController.java
 /home/rajaobelina/Documents/s4/web_dynamique/myFramework/myFramework/test/Servlet-Hello/src/main/java/test/exemple2/TestController2.java
+/home/rajaobelina/Documents/s4/web_dynamique/myFramework/myFramework/test/Servlet-Hello/src/main/java/test/exemple2/UploadExampleController.java
 /home/rajaobelina/Documents/s4/web_dynamique/myFramework/myFramework/test/Servlet-Hello/src/main/java/test/exemple2/config/AppConfig.java
 /home/rajaobelina/Documents/s4/web_dynamique/myFramework/myFramework/test/Servlet-Hello/src/main/java/test/exemple2/entity/Product.java
+/home/rajaobelina/Documents/s4/web_dynamique/myFramework/myFramework/test/Servlet-Hello/src/main/java/test/exemple2/model/Auteur.java
+/home/rajaobelina/Documents/s4/web_dynamique/myFramework/myFramework/test/Servlet-Hello/src/main/java/test/exemple2/model/Document.java
 /home/rajaobelina/Documents/s4/web_dynamique/myFramework/myFramework/test/Servlet-Hello/src/main/java/test/exemple2/model/Event.java
 /home/rajaobelina/Documents/s4/web_dynamique/myFramework/myFramework/test/Servlet-Hello/src/main/java/test/exemple2/model/Level.java
 /home/rajaobelina/Documents/s4/web_dynamique/myFramework/myFramework/test/Servlet-Hello/src/main/java/test/exemple2/repository/ProductRepository.java
