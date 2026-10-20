@@ -5,23 +5,29 @@ import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import dev.framework.util.BindParam;
-import dev.framework.util.FileUpload;
-import dev.framework.util.LoadClass;
-import dev.framework.util.Mapping;
-import dev.framework.util.UrlMethod;
-import dev.framework.util.ViewUtil;
+import dev.framework.util.*;
+// import dev.framework.util.BindParam;
+// import dev.framework.util.FileUpload;
+// import dev.framework.util.LoadClass;
+// import dev.framework.util.Mapping;
+// import dev.framework.util.UrlMethod;
+// import dev.framework.util.ViewUtil;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 public class FrontController extends HttpServlet {
 
@@ -91,6 +97,14 @@ public class FrontController extends HttpServlet {
 
                 Object result = controllerMethod.invoke(controller, parameters);
 
+                // Les modifications faites par le controller sur la map de session
+                // sont recopiées dans la vraie HttpSession
+                for (Object parameter : parameters) {
+                    if (parameter instanceof Injection injection) {
+                        saveSession(injection, request.getSession());
+                    }
+                }
+
                 // CAS 1 : la méthode est annotée @Rest -> on sérialise le résultat en JSON,
                 // quel que soit son type (objet, liste, String...)
                 boolean isRest = restAnnotationClass != null
@@ -124,6 +138,17 @@ public class FrontController extends HttpServlet {
                     try (PrintWriter out = response.getWriter()) {
                         out.println("Resultat de la methode:\n");
                         out.println(text);
+                    }
+                    return;
+                }
+
+                // CAS 4 : Injection (pas de @Rest) → sauvegarde en session + affichage du contenu
+                if (result instanceof Injection injection) {
+                    saveSession(injection, request.getSession());
+                    response.setContentType("text/plain;charset=UTF-8");
+                    try (PrintWriter out = response.getWriter()) {
+                        out.println("Contenu de la session pour " + urlMethod + " :");
+                        injection.getSession().forEach((key, value) -> out.println(key + " = " + value));
                     }
                     return;
                 }
@@ -193,11 +218,51 @@ public class FrontController extends HttpServlet {
                 }
                 return BindParam.convert(value, paramType);
             }
+
+            if (paramType.equals(Injection.class)) {
+                return loadSession(request.getSession());
+            }
             return BindParam.bind(paramType, request);
         } catch (Exception e) {
             throw new ServletException(
                     "Erreur lors de la liaison du paramètre '" + paramName + "' pour " + urlMethod, e);
         }
+    }
+
+    /**
+     * Récupère l'Injection singleton de l'ApplicationContext Spring (et sa HashMap),
+     * vide la map puis la remplit avec les attributs de la session de l'utilisateur courant.
+     */
+    private Injection loadSession(HttpSession httpSession) {
+        Injection injection;
+        try {
+            injection = springContext.getBean(Injection.class);
+        } catch (NoSuchBeanDefinitionException e) {
+            injection = new Injection();
+        }
+        if (injection.getSession() == null) {
+            injection.injectSession(new HashMap<>());
+        }
+        // la map est partagée (singleton) : on retire les données de la requête précédente
+        injection.getSession().clear();
+        for (String name : Collections.list(httpSession.getAttributeNames())) {
+            injection.injectSessionAttribute(name, httpSession.getAttribute(name));
+        }
+        return injection;
+    }
+
+    /** Recopie la map de l'Injection dans la HttpSession (ajouts, modifications et suppressions). */
+    private void saveSession(Injection injection, HttpSession httpSession) {
+        Map<String, Object> session = injection.getSession();
+        if (session == null) {
+            return;
+        }
+        for (String name : new ArrayList<>(Collections.list(httpSession.getAttributeNames()))) {
+            if (!session.containsKey(name)) {
+                httpSession.removeAttribute(name);
+            }
+        }
+        session.forEach(httpSession::setAttribute);
     }
 
     private boolean isSimpleType(Class<?> t) {
