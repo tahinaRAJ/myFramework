@@ -8,5 +8,6 @@ dev/framework/util/UrlMethod.class
 dev/framework/util/BindParam.class
 dev/framework/util/Injection.class
 dev/framework/util/LoadClass.class
+dev/framework/annotation/Auth.class
 dev/framework/listener/FrameworkContextListener.class
 dev/framework/annotation/Controller.class
