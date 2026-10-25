@@ -22,6 +22,7 @@ public class FrameworkContextListener implements ServletContextListener {
     String viewSuffix;
     String annotationRest;
     String userSessionKey;
+    String roleSessionKey;
     Map<UrlMethod, Mapping> toutesLesRoutes;
 
     @Override
@@ -36,6 +37,12 @@ public class FrameworkContextListener implements ServletContextListener {
             userSessionKey = sce.getServletContext().getInitParameter("auth.user-session-key");
             if (userSessionKey == null || userSessionKey.isBlank()) {
                 throw new IllegalStateException("Le paramètre auth.user-session-key est obligatoire dans le web.xml");
+            }
+
+            // Nom de l'attribut de session qui contient le rôle de l'utilisateur (utilisé par @Auth(roles = ...))
+            roleSessionKey = sce.getServletContext().getInitParameter("auth.role-session-key");
+            if (roleSessionKey == null || roleSessionKey.isBlank()) {
+                throw new IllegalStateException("Le paramètre auth.role-session-key est obligatoire dans le web.xml");
             }
 
             toutesLesRoutes = new HashMap<>();
@@ -62,6 +69,7 @@ public class FrameworkContextListener implements ServletContextListener {
             sce.getServletContext().setAttribute("springContext", springContext);
             sce.getServletContext().setAttribute("annotationRest", annotationRest);
             sce.getServletContext().setAttribute("userSessionKey", userSessionKey);
+            sce.getServletContext().setAttribute("roleSessionKey", roleSessionKey);
 
             System.out.println("[SUCCESS] Scan terminé avec succès. " + toutesLesRoutes.size() + " routes chargées.");
 
