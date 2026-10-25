@@ -1,5 +1,6 @@
 package test.example2.config;
 
+import java.util.HashMap;
 import java.util.Properties;
 
 import javax.sql.DataSource;
@@ -18,6 +19,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+
+import dev.framework.util.Injection;
 
 /**
  * Config Spring 100% Java (pas de XML) pour l'appli de test.
@@ -46,6 +49,25 @@ public class AppConfig {
 
     @Value("${db.password}")
     private String password;
+
+    /**
+     * HashMap de session du framework, créée une seule fois dans l'ApplicationContext (singleton).
+     */
+    @Bean
+    public HashMap<String, Object> sessionMap() {
+        return new HashMap<>();
+    }
+
+    /**
+     * Injection singleton : le FrontController la récupère avec springContext.getBean(Injection.class).
+     * sessionMap() renvoie toujours le même bean (la classe @Configuration est proxifiée par Spring).
+     */
+    @Bean
+    public Injection injection() {
+        Injection injection = new Injection();
+        injection.injectSession(sessionMap());
+        return injection;
+    }
 
     @Bean
     public DataSource dataSource() {

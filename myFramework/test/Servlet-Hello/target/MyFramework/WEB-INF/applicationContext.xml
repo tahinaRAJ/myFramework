@@ -9,4 +9,12 @@
 
     <context:component-scan base-package="test.example2" />
 
+    <!-- HashMap de session du framework (singleton) -->
+    <bean id="sessionMap" class="java.util.HashMap" />
+
+    <!-- Injection singleton, appelée dans le FrontController -->
+    <bean id="injection" class="dev.framework.util.Injection">
+        <property name="session" ref="sessionMap" />
+    </bean>
+
 </beans>
