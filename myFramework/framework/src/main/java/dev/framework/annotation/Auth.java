@@ -12,13 +12,16 @@ import java.lang.annotation.Target;
  * l'attribut dont le nom est défini dans le web.xml (context-param "auth.user-session-key").
  * Si ce n'est pas le cas, il répond 401 (Unauthorized) sans exécuter la méthode.
  *
- * Exemple :
- *   @UrlMapping(value = "/profil", method = "GET")
- *   @Auth
- *   public String profil(Injection session) { ... }
+ * Si des rôles sont précisés, le rôle de l'utilisateur (attribut de session défini par
+ * le context-param "auth.role-session-key") doit faire partie de la liste, sinon 403 (Forbidden).
+ *
+ * Exemples :
+ *   @Auth                                  -> il suffit d'être connecté
+ *   @Auth(roles = "admin")                 -> connecté ET rôle "admin"
+ *   @Auth(roles = {"admin", "manager"})    -> connecté ET rôle "admin" ou "manager"
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD })
 public @interface Auth {
-    String value() default "";
+    String[] roles() default {};
 }
