@@ -7,14 +7,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import dev.framework.annotation.Auth;
 import dev.framework.util.*;
 // import dev.framework.util.BindParam;
 // import dev.framework.util.FileUpload;
@@ -36,6 +35,9 @@ public class FrontController extends HttpServlet {
     String viewSuffix;
     ApplicationContext springContext;
 
+    /** Nom de l'attribut de session qui contient l'utilisateur connecté (web.xml : auth.user-session-key). */
+    String userSessionKey;
+
     /** Classe de l'annotation @Rest (ex: dev.framework.annotation.Rest), résolue une seule fois au démarrage. */
     Class<? extends Annotation> restAnnotationClass;
 
@@ -49,6 +51,7 @@ public class FrontController extends HttpServlet {
         viewPrefix       = (String)                  getServletContext().getAttribute("prefix");
         viewSuffix       = (String)                  getServletContext().getAttribute("suffix");
         springContext    = (ApplicationContext)       getServletContext().getAttribute("springContext");
+        userSessionKey   = (String)                  getServletContext().getAttribute("userSessionKey");
 
         String annotationRest = (String) getServletContext().getAttribute("annotationRest");
         if (annotationRest != null && !annotationRest.isBlank()) {
@@ -83,11 +86,19 @@ public class FrontController extends HttpServlet {
             System.out.println("Route trouvée : " + urlMethod + " -> " + mapping);
 
             try {
+                Method controllerMethod = mapping.getMethod();
+
+                // @Auth : la méthode est réservée aux utilisateurs connectés
+                if (controllerMethod.isAnnotationPresent(Auth.class) && !isAuthenticated(request)) {
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+                            "Vous devez être connecté pour accéder à " + pathInfo);
+                    return;
+                }
+
                 // Le controller est récupéré depuis le contexte Spring : Spring l'instancie
                 // et injecte au passage tous ses @Autowired (Service, Repository, etc.)
                 Object controller = springContext.getBean(mapping.getControllerClass());
 
-                Method controllerMethod = mapping.getMethod();
                 Class<?>[] parameterTypes = controllerMethod.getParameterTypes();
                 Object[] parameters = new Object[parameterTypes.length];
 
@@ -229,22 +240,19 @@ public class FrontController extends HttpServlet {
         }
     }
 
+    /** Vrai si la session de l'utilisateur contient l'attribut "utilisateur connecté". */
+    private boolean isAuthenticated(HttpServletRequest request) {
+        HttpSession httpSession = request.getSession(false);
+        return httpSession != null && httpSession.getAttribute(userSessionKey) != null;
+    }
+
     /**
-     * Récupère l'Injection singleton de l'ApplicationContext Spring (et sa HashMap),
-     * vide la map puis la remplit avec les attributs de la session de l'utilisateur courant.
+     * Crée une Injection propre à la requête courante et la remplit avec les attributs
+     * de la session de l'utilisateur. Une nouvelle instance à chaque requête : deux
+     * utilisateurs qui appellent le serveur en même temps ne partagent jamais la même map.
      */
     private Injection loadSession(HttpSession httpSession) {
-        Injection injection;
-        try {
-            injection = springContext.getBean(Injection.class);
-        } catch (NoSuchBeanDefinitionException e) {
-            injection = new Injection();
-        }
-        if (injection.getSession() == null) {
-            injection.injectSession(new HashMap<>());
-        }
-        // la map est partagée (singleton) : on retire les données de la requête précédente
-        injection.getSession().clear();
+        Injection injection = new Injection();
         for (String name : Collections.list(httpSession.getAttributeNames())) {
             injection.injectSessionAttribute(name, httpSession.getAttribute(name));
         }

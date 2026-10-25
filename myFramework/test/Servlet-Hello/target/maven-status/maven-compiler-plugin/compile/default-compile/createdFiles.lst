@@ -1,4 +1,5 @@
 test/example2/model/Document.class
+test/example2/AuthController.class
 test/example2/service/ProductService.class
 test/example2/model/Level.class
 test/example2/model/Auteur.class

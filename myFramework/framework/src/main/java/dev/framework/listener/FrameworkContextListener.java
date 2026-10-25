@@ -21,6 +21,7 @@ public class FrameworkContextListener implements ServletContextListener {
     String viewPrefix;
     String viewSuffix;
     String annotationRest;
+    String userSessionKey;
     Map<UrlMethod, Mapping> toutesLesRoutes;
 
     @Override
@@ -30,6 +31,12 @@ public class FrameworkContextListener implements ServletContextListener {
         try {
             ApplicationContext springContext = WebApplicationContextUtils
                     .getRequiredWebApplicationContext(sce.getServletContext());
+
+            // Nom de l'attribut de session qui contient l'utilisateur connecté (utilisé par @Auth)
+            userSessionKey = sce.getServletContext().getInitParameter("auth.user-session-key");
+            if (userSessionKey == null || userSessionKey.isBlank()) {
+                throw new IllegalStateException("Le paramètre auth.user-session-key est obligatoire dans le web.xml");
+            }
 
             toutesLesRoutes = new HashMap<>();
             Properties prop = new Properties();
@@ -54,12 +61,13 @@ public class FrameworkContextListener implements ServletContextListener {
             sce.getServletContext().setAttribute("suffix", viewSuffix);
             sce.getServletContext().setAttribute("springContext", springContext);
             sce.getServletContext().setAttribute("annotationRest", annotationRest);
+            sce.getServletContext().setAttribute("userSessionKey", userSessionKey);
 
             System.out.println("[SUCCESS] Scan terminé avec succès. " + toutesLesRoutes.size() + " routes chargées.");
 
         } catch (IllegalStateException e) {
             System.err.println("[ERREUR CRITIQUE DÉMARRAGE] " + e.getMessage());
-            throw new RuntimeException("Échec du déploiement de l'application à cause d'un conflit de routes.", e);
+            throw new RuntimeException("Échec du déploiement de l'application : " + e.getMessage(), e);
         }
     }
 

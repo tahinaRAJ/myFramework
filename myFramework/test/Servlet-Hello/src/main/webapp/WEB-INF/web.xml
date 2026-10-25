@@ -22,6 +22,12 @@
         <param-value>.jsp</param-value>
     </context-param>
 
+    <!-- @Auth : nom de l'attribut de session qui contient l'utilisateur connecté (obligatoire) -->
+    <context-param>
+        <param-name>auth.user-session-key</param-name>
+        <param-value>user</param-value>
+    </context-param>
+
     <!-- Config du contexte Spring : classe Java annotée (pas de XML) -->
     <context-param>
         <param-name>contextClass</param-name>
