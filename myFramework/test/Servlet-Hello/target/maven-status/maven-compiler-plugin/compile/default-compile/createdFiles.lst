@@ -14,5 +14,6 @@ test/example2/config/AppConfig.class
 test/example2/repository/ProductRepository.class
 test/example2/TestController2.class
 test/example2/BindExampleController.class
+test/example2/SessionController.class
 test/example2/TestController.class
 test/example2/Test.class
