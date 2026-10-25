@@ -6,6 +6,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
@@ -38,6 +39,9 @@ public class FrontController extends HttpServlet {
     /** Nom de l'attribut de session qui contient l'utilisateur connecté (web.xml : auth.user-session-key). */
     String userSessionKey;
 
+    /** Nom de l'attribut de session qui contient le rôle de l'utilisateur (web.xml : auth.role-session-key). */
+    String roleSessionKey;
+
     /** Classe de l'annotation @Rest (ex: dev.framework.annotation.Rest), résolue une seule fois au démarrage. */
     Class<? extends Annotation> restAnnotationClass;
 
@@ -52,6 +56,7 @@ public class FrontController extends HttpServlet {
         viewSuffix       = (String)                  getServletContext().getAttribute("suffix");
         springContext    = (ApplicationContext)       getServletContext().getAttribute("springContext");
         userSessionKey   = (String)                  getServletContext().getAttribute("userSessionKey");
+        roleSessionKey   = (String)                  getServletContext().getAttribute("roleSessionKey");
 
         String annotationRest = (String) getServletContext().getAttribute("annotationRest");
         if (annotationRest != null && !annotationRest.isBlank()) {
@@ -88,11 +93,21 @@ public class FrontController extends HttpServlet {
             try {
                 Method controllerMethod = mapping.getMethod();
 
-                // @Auth : la méthode est réservée aux utilisateurs connectés
-                if (controllerMethod.isAnnotationPresent(Auth.class) && !isAuthenticated(request)) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                            "Vous devez être connecté pour accéder à " + pathInfo);
-                    return;
+                // @Auth : la méthode est réservée aux utilisateurs connectés (401),
+                // et éventuellement à certains rôles (403)
+                Auth auth = controllerMethod.getAnnotation(Auth.class);
+                if (auth != null) {
+                    if (!isAuthenticated(request)) {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+                                "Vous devez être connecté pour accéder à " + pathInfo);
+                        return;
+                    }
+                    if (!hasRequiredRole(request, auth.roles())) {
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                                "Rôle insuffisant pour accéder à " + pathInfo
+                                        + " (rôles autorisés : " + Arrays.toString(auth.roles()) + ")");
+                        return;
+                    }
                 }
 
                 // Le controller est récupéré depuis le contexte Spring : Spring l'instancie
@@ -244,6 +259,16 @@ public class FrontController extends HttpServlet {
     private boolean isAuthenticated(HttpServletRequest request) {
         HttpSession httpSession = request.getSession(false);
         return httpSession != null && httpSession.getAttribute(userSessionKey) != null;
+    }
+
+    /** Vrai si aucun rôle n'est exigé, ou si le rôle en session fait partie des rôles autorisés. */
+    private boolean hasRequiredRole(HttpServletRequest request, String[] roles) {
+        if (roles.length == 0) {
+            return true;
+        }
+        HttpSession httpSession = request.getSession(false);
+        Object role = (httpSession == null) ? null : httpSession.getAttribute(roleSessionKey);
+        return role != null && Arrays.asList(roles).contains(role.toString());
     }
 
     /**

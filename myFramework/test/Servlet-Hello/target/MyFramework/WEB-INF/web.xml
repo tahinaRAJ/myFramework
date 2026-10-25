@@ -28,6 +28,12 @@
         <param-value>user</param-value>
     </context-param>
 
+    <!-- @Auth(roles = ...) : nom de l'attribut de session qui contient le rôle de l'utilisateur (obligatoire) -->
+    <context-param>
+        <param-name>auth.role-session-key</param-name>
+        <param-value>role</param-value>
+    </context-param>
+
     <!-- Config du contexte Spring : classe Java annotée (pas de XML) -->
     <context-param>
         <param-name>contextClass</param-name>
