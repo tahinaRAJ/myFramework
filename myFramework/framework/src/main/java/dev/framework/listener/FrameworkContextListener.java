@@ -24,6 +24,7 @@ public class FrameworkContextListener implements ServletContextListener {
     String userSessionKey;
     String roleSessionKey;
     Map<UrlMethod, Mapping> toutesLesRoutes;
+    Map<Class<?>, Object> controllers;
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
@@ -60,10 +61,21 @@ public class FrameworkContextListener implements ServletContextListener {
 
             LoadClass.loadUrlMappingsWithMethod(packageName, toutesLesRoutes);
 
+            // Singleton : une seule instance par classe de controller (et non par route),
+            // créée au démarrage puis réutilisée pour toutes les requêtes
+            controllers = new HashMap<>();
+            for (Mapping mapping : toutesLesRoutes.values()) {
+                Class<?> controllerClass = mapping.getControllerClass();
+                if (!controllers.containsKey(controllerClass)) {
+                    controllers.put(controllerClass, springContext.getBean(controllerClass));
+                }
+            }
+
             viewPrefix = sce.getServletContext().getInitParameter("view.prefix");
             viewSuffix = sce.getServletContext().getInitParameter("view.suffix");
 
             sce.getServletContext().setAttribute("routesWithMethod", toutesLesRoutes);
+            sce.getServletContext().setAttribute("controllers", controllers);
             sce.getServletContext().setAttribute("prefix", viewPrefix);
             sce.getServletContext().setAttribute("suffix", viewSuffix);
             sce.getServletContext().setAttribute("springContext", springContext);
@@ -71,7 +83,8 @@ public class FrameworkContextListener implements ServletContextListener {
             sce.getServletContext().setAttribute("userSessionKey", userSessionKey);
             sce.getServletContext().setAttribute("roleSessionKey", roleSessionKey);
 
-            System.out.println("[SUCCESS] Scan terminé avec succès. " + toutesLesRoutes.size() + " routes chargées.");
+            System.out.println("[SUCCESS] Scan terminé avec succès. " + toutesLesRoutes.size() + " routes chargées, "
+                    + controllers.size() + " controllers instanciés.");
 
         } catch (IllegalStateException e) {
             System.err.println("[ERREUR CRITIQUE DÉMARRAGE] " + e.getMessage());
