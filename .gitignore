@@ -1,0 +1,25 @@
+# Sorties de compilation Maven
+target/
+
+# Sorties des scripts deploy.sh / deploy-maven.sh
+myFramework/test/Servlet-Hello/build/
+myFramework/test/Servlet-Hello/lib/
+
+# Fichiers compilés et archives
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE
+.vscode/
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+# Système / logs
+.DS_Store
+Thumbs.db
+*.log

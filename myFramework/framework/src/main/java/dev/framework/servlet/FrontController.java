@@ -32,6 +32,10 @@ import jakarta.servlet.http.HttpSession;
 public class FrontController extends HttpServlet {
 
     Map<UrlMethod, Mapping> routesWithMethod;
+
+    /** Instance unique de chaque controller, créée au démarrage par FrameworkContextListener. */
+    Map<Class<?>, Object> controllers;
+
     String viewPrefix;
     String viewSuffix;
     ApplicationContext springContext;
@@ -52,6 +56,7 @@ public class FrontController extends HttpServlet {
     public void init() throws ServletException {
         super.init();
         routesWithMethod = (Map<UrlMethod, Mapping>) getServletContext().getAttribute("routesWithMethod");
+        controllers      = (Map<Class<?>, Object>)   getServletContext().getAttribute("controllers");
         viewPrefix       = (String)                  getServletContext().getAttribute("prefix");
         viewSuffix       = (String)                  getServletContext().getAttribute("suffix");
         springContext    = (ApplicationContext)       getServletContext().getAttribute("springContext");
@@ -110,9 +115,9 @@ public class FrontController extends HttpServlet {
                     }
                 }
 
-                // Le controller est récupéré depuis le contexte Spring : Spring l'instancie
-                // et injecte au passage tous ses @Autowired (Service, Repository, etc.)
-                Object controller = springContext.getBean(mapping.getControllerClass());
+                // Le controller est un singleton : la même instance sert toutes les requêtes.
+                // Elle a été créée par Spring au démarrage, avec ses @Autowired (Service, Repository, etc.)
+                Object controller = controllers.get(mapping.getControllerClass());
 
                 Class<?>[] parameterTypes = controllerMethod.getParameterTypes();
                 Object[] parameters = new Object[parameterTypes.length];
